@@ -829,7 +829,10 @@ MonoBehaviour:
     m_Bits: 64
   speedMultiplier: 3
   friction: 2
-  squashMult: 20
+  squashSpeed: 2
+  squashSpeedMult: 20
+  minSquashSpeed: 1
+  maxSquash: 0.3
   visibleObject: {fileID: 1487714840}
 --- !u!135 &418019618
 SphereCollider:

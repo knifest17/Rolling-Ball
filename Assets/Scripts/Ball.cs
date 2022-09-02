@@ -5,7 +5,14 @@ public class Ball : MonoBehaviour
 {
     [SerializeField] LineRenderer lineRenderer;
     [SerializeField] LayerMask groundLayer;
-    [SerializeField] float speedMultiplier, friction, squashMult;
+    [SerializeField]
+    float
+        speedMultiplier,
+        friction,
+        squashSpeed,
+        squashSpeedMult,
+        minSquashSpeed,
+        maxSquash;
     [SerializeField] Transform visibleObject;
 
     Camera cam;
@@ -14,6 +21,8 @@ public class Ball : MonoBehaviour
     Coroutine movingCoroutine;
     Rigidbody rb;
     int lastWallId = 0;
+    float rollingSpeedMult = 1f;
+    
 
     void Awake()
     {
@@ -49,12 +58,12 @@ public class Ball : MonoBehaviour
     {
         while (speed > 0)
         {
-            transform.position += direction * speed * Time.deltaTime;
-            //visibleObject.RotateAround(
-            //    visibleObject.position,
-            //    new Vector3(direction.z, 0, -direction.x),
-            //    speed);
-            speed -= friction * Time.deltaTime;
+            transform.position += direction * speed * rollingSpeedMult * Time.deltaTime;
+            visibleObject.RotateAround(
+                visibleObject.position,
+                new Vector3(direction.z, 0, -direction.x),
+                speed * 0.5f * rollingSpeedMult);
+            speed -= friction * rollingSpeedMult * Time.deltaTime;
             yield return null;
         }
     }
@@ -80,11 +89,12 @@ public class Ball : MonoBehaviour
         lastWallId = collision.gameObject.GetInstanceID();
         var contact = collision.GetContact(0);
         var newDirection = Vector3.Reflect(direction, contact.normal);
-        StartCoroutine(CollisionRoutine());
+        if (speed > minSquashSpeed) StartCoroutine(CollisionRoutine());
+        else direction = newDirection;
 
         IEnumerator CollisionRoutine()
         {
-            if (movingCoroutine != null) StopMoving();
+            rollingSpeedMult = 0.5f;
             rb.isKinematic = true;
 
             var lookRot = Quaternion.LookRotation(contact.normal, Vector3.up);
@@ -95,16 +105,16 @@ public class Ball : MonoBehaviour
             float sign = 1f;
             bool squash = true;
             float angle = Vector3.Angle(newDirection, contact.normal);
-            float squashSpeed = (1 / speed * squashMult) * (angle + 10f) * 0.1f;
+            float compSpeed = squashSpeed * (Mathf.Pow(angle, 1f / 2f) + 10f) * 0.1f;
             print(speed);
-            float maxCompression = 0.25f;
-            while (squash)
+            float targetCompression = Mathf.Clamp(0.25f * speed * 0.1f, 0, maxSquash);
+            while (squash && speed > 0)
             {
-                transform.position += direction * squashSpeed * Time.deltaTime;
+                transform.position += direction * compSpeed * Time.deltaTime;
+                compression += sign * compSpeed * Time.deltaTime;
                 float delta = compression * 2;
                 transform.localScale = new Vector3(1f + delta, 1f + delta, 1f - delta);
-                compression += sign * squashSpeed * Time.deltaTime;
-                if (compression >= maxCompression)
+                if (compression >= targetCompression)
                 {
                     direction = newDirection;
                     sign = -1f;
@@ -112,12 +122,63 @@ public class Ball : MonoBehaviour
                 if (sign == -1f && compression <= 0f) squash = false;
                 yield return null;
             }
+
             transform.localScale = Vector3.one;
             visibleObject.Rotate(Vector3.up, lookRot.eulerAngles.y);
             transform.localRotation = Quaternion.identity;
-            rb.isKinematic = false;
-            movingCoroutine = StartCoroutine(MovingRoutine());
 
+            rb.isKinematic = false;
+            rollingSpeedMult = 1f;
         }
     }
+
+    //void OnCollisionEnter(Collision collision)
+    //{
+    //    if (collision.gameObject.GetInstanceID() == lastWallId) return;
+    //    if (collision.contactCount == 0) return;
+    //    lastWallId = collision.gameObject.GetInstanceID();
+    //    var contact = collision.GetContact(0);
+    //    var newDirection = Vector3.Reflect(direction, contact.normal);
+    //    if (speed > minSquashSpeed) StartCoroutine(CollisionRoutine());
+    //    else direction = newDirection;
+
+    //    IEnumerator CollisionRoutine()
+    //    {
+    //        if (movingCoroutine != null) StopMoving();
+    //        rb.isKinematic = true;
+
+    //        var lookRot = Quaternion.LookRotation(contact.normal, Vector3.up);
+    //        transform.rotation = lookRot;
+    //        visibleObject.Rotate(Vector3.up, -lookRot.eulerAngles.y);
+
+    //        float compression = 0;
+    //        float sign = 1f;
+    //        bool squash = true;
+    //        float angle = Vector3.Angle(newDirection, contact.normal);
+    //        float squashSpeed = (1 / speed * squashSpeedMult) * (angle + 10f) * 0.1f;
+    //        print(speed);
+    //        float maxCompression = 0.25f * speed * 0.1f;
+    //        while (squash)
+    //        {
+    //            transform.position += direction * squashSpeed * Time.deltaTime;
+    //            float delta = compression * 2;
+    //            transform.localScale = new Vector3(1f + delta, 1f + delta, 1f - delta);
+    //            compression += sign * squashSpeed * Time.deltaTime;
+    //            if (compression >= maxCompression)
+    //            {
+    //                direction = newDirection;
+    //                sign = -1f;
+    //            }
+    //            if (sign == -1f && compression <= 0f) squash = false;
+    //            yield return null;
+    //        }
+
+    //        transform.localScale = Vector3.one;
+    //        visibleObject.Rotate(Vector3.up, lookRot.eulerAngles.y);
+    //        transform.localRotation = Quaternion.identity;
+
+    //        rb.isKinematic = false;
+    //        movingCoroutine = StartCoroutine(MovingRoutine());
+    //    }
+    //}
 }
