@@ -1,12 +1,12 @@
 using System.Collections;
 using UnityEngine;
-using DG.Tweening;
 
 public class Ball : MonoBehaviour
 {
     [SerializeField] LineRenderer lineRenderer;
     [SerializeField] LayerMask groundLayer;
-    [SerializeField] float speedMultiplier, friction, squashTimeMult, squashScaleMult;
+    [SerializeField] float speedMultiplier, friction, squashMult;
+    [SerializeField] Transform visibleObject;
 
     Camera cam;
     float speed;
@@ -50,10 +50,10 @@ public class Ball : MonoBehaviour
         while (speed > 0)
         {
             transform.position += direction * speed * Time.deltaTime;
-            transform.RotateAround(
-                transform.position,
-                new Vector3(direction.z, 0, -direction.x),
-                speed);
+            //visibleObject.RotateAround(
+            //    visibleObject.position,
+            //    new Vector3(direction.z, 0, -direction.x),
+            //    speed);
             speed -= friction * Time.deltaTime;
             yield return null;
         }
@@ -79,36 +79,45 @@ public class Ball : MonoBehaviour
         if (collision.contactCount == 0) return;
         lastWallId = collision.gameObject.GetInstanceID();
         var contact = collision.GetContact(0);
-        direction = Vector3.Reflect(direction, contact.normal);
+        var newDirection = Vector3.Reflect(direction, contact.normal);
         StartCoroutine(CollisionRoutine());
 
         IEnumerator CollisionRoutine()
         {
             if (movingCoroutine != null) StopMoving();
-            float angle = Vector3.Angle(contact.normal, direction);
-            print(angle);
+            rb.isKinematic = true;
+
+            var lookRot = Quaternion.LookRotation(contact.normal, Vector3.up);
+            transform.rotation = lookRot;
+            visibleObject.Rotate(Vector3.up, -lookRot.eulerAngles.y);
+
+            float compression = 0;
+            float sign = 1f;
+            bool squash = true;
+            float angle = Vector3.Angle(newDirection, contact.normal);
+            float squashSpeed = (1 / speed * squashMult) * (angle + 10f) * 0.1f;
             print(speed);
-            if (angle > 60 || speed < 1.5f) angle = 90;
-            float squash = Mathf.Sqrt(speed) * Mathf.Abs(90 - angle) * 0.01f;
-            if (squash > 0)
+            float maxCompression = 0.25f;
+            while (squash)
             {
-                rb.isKinematic = true;
-                float scaleDelta = squash * squashScaleMult;
-                var targetScale = new Vector3(1f + scaleDelta, 1f + scaleDelta, 1f - scaleDelta);
-                float duration = squash * squashTimeMult;
-                transform.localRotation = Quaternion.LookRotation(contact.normal, Vector3.up);
-                transform.DOLocalMove(transform.localPosition - contact.normal * 0.25f, duration);
-                transform.DOScale(targetScale, duration);
-                GetComponent<MeshRenderer>().material.DOColor(Color.Lerp(Color.white, Color.red, duration * 2f), duration);
-                yield return new WaitForSeconds(duration);
-                transform.DOScale(Vector3.one, duration);
-                transform.DOLocalMove(transform.localPosition + contact.normal * 0.25f, duration);
-                GetComponent<MeshRenderer>().material.DOColor(Color.white, duration);
-                yield return new WaitForSeconds(duration);
-                transform.localRotation = Quaternion.identity;
-                rb.isKinematic = false;
+                transform.position += direction * squashSpeed * Time.deltaTime;
+                float delta = compression * 2;
+                transform.localScale = new Vector3(1f + delta, 1f + delta, 1f - delta);
+                compression += sign * squashSpeed * Time.deltaTime;
+                if (compression >= maxCompression)
+                {
+                    direction = newDirection;
+                    sign = -1f;
+                }
+                if (sign == -1f && compression <= 0f) squash = false;
+                yield return null;
             }
+            transform.localScale = Vector3.one;
+            visibleObject.Rotate(Vector3.up, lookRot.eulerAngles.y);
+            transform.localRotation = Quaternion.identity;
+            rb.isKinematic = false;
             movingCoroutine = StartCoroutine(MovingRoutine());
+
         }
     }
 }
