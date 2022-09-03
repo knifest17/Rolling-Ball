@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -7,18 +8,27 @@ namespace Assets.Scripts
     {
         int money;
 
-        public int Money => money;
+        public int Money
+        {
+            get => money;
+            private set
+            {
+                money = value;
+                MoneyChanged?.Invoke(money);
+            }
+        }
+
+        public event Action<int> MoneyChanged;
 
         void Start()
         {
-            money = 0;
+            Money = 0;
             Bonus.SomeBonusCollected += OnSomeBonusCollected;
         }
 
         void OnSomeBonusCollected()
         {
-            money += 50;
-            print(money);
+            Money += 50;
         }
     }
 }

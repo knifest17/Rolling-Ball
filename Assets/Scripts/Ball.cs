@@ -86,7 +86,7 @@ namespace Assets.Scripts
                 visibleObject.RotateAround(
                     visibleObject.position,
                     new Vector3(direction.z, 0, -direction.x),
-                    speed * 0.35f * rollingSpeedMult);
+                    speed * 0.5f * rollingSpeedMult);
                 speed -= ballSettings.Friction * rollingSpeedMult * Time.deltaTime;
                 yield return null;
             }
