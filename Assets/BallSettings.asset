@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d38fedd4a33c4d14d9aa9bb4058c920a, type: 3}
   m_Name: BallSettings
   m_EditorClassIdentifier: 
+  maxSpeed: 10
   speedMultiplier: 3
-  friction: 3
+  friction: 2
   squashSpeed: 1.5
   squashSpeedMult: 20
-  squashRollingMult: 0.3
+  squashRollingMult: 0.5
   minSquashSpeed: 2
   maxSquash: 0.3

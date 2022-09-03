@@ -7,6 +7,7 @@ namespace Assets.Scripts
     {
         [SerializeField]
         float
+            maxSpeed,
             speedMultiplier,
             friction,
             squashSpeed,
@@ -15,6 +16,7 @@ namespace Assets.Scripts
             minSquashSpeed,
             maxSquash;
 
+        public float MaxSpeed => maxSpeed;
         public float SpeedMultiplier => speedMultiplier;
         public float Friction => friction;
         public float SquashSpeed => squashSpeed;
