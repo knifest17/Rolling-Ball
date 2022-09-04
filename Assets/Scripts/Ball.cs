@@ -139,9 +139,9 @@ namespace Assets.Scripts
             t.localRotation = lookRot;
             visibleObject.Rotate(Vector3.up, -lookRot.eulerAngles.y);
 
+            bool squash = true;
             float compression = 0;
             float sign = 1f;
-            bool squash = true;
             float angle = Vector3.Angle(newDir, normal);
             float compSpeed = ballSettings.SquashSpeed * (Mathf.Pow(angle, 1f / 2f) + 10f) * 0.1f;
             float targetCompression = Mathf.Clamp(0.25f * speed * 0.1f, 0, ballSettings.MaxSquash);
